@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import InstallPrompt from '@/components/pwa/InstallPrompt'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -67,7 +68,11 @@ export default function RootLayout({
             borderRadius: '50%',
             pointerEvents: 'none'
           }} />
+          
           {children}
+
+          {/* Banner Automático de Instalação PWA para Android e iOS */}
+          <InstallPrompt />
         </div>
       </body>
     </html>

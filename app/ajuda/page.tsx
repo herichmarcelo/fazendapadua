@@ -86,10 +86,36 @@ export default function AjudaPage() {
           </div>
         </div>
 
+        {/* Guia de Instalação PWA no Celular */}
+        <div className="card" style={{ padding: '1.25rem', background: 'white', borderRadius: '1rem', marginBottom: '1.5rem', borderLeft: '4px solid #009739' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#111827', marginBottom: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '1.1rem' }}>📲</span>
+            Como Instalar no Celular (Android e iPhone)
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.825rem', color: '#374151' }}>
+            {/* Android */}
+            <div style={{ background: '#F9FAFB', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #E5E7EB' }}>
+              <strong style={{ color: '#006B2B', display: 'block', marginBottom: '0.35rem' }}>🤖 No Android (Google Chrome):</strong>
+              <p style={{ margin: '0 0 0.25rem' }}>1. Ao entrar no site, clique no botão <strong>&quot;Instalar Aplicativo&quot;</strong> que surge na tela.</p>
+              <p style={{ margin: 0 }}>2. Ou toque nos <strong>3 pontinhos ⋮</strong> no canto superior do Chrome e escolha <strong>&quot;Instalar aplicativo&quot;</strong>.</p>
+            </div>
+
+            {/* iOS */}
+            <div style={{ background: '#F0F9FF', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #BAE6FD' }}>
+              <strong style={{ color: '#0284C7', display: 'block', marginBottom: '0.35rem' }}>🍏 No iPhone / iPad (Safari):</strong>
+              <p style={{ margin: '0 0 0.25rem' }}>1. Abra o site no navegador <strong>Safari</strong>.</p>
+              <p style={{ margin: '0 0 0.25rem' }}>2. Toque no botão <strong>Compartilhar</strong> (ícone com quadrado e seta ⬆ no rodapé).</p>
+              <p style={{ margin: '0 0 0.25rem' }}>3. Role para baixo e selecione <strong>&quot;Adicionar à Tela de Início&quot;</strong> ➕.</p>
+              <p style={{ margin: 0 }}>4. Toque em <strong>&quot;Adicionar&quot;</strong> no canto superior direito.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Informações da Versão */}
         <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9CA3AF' }}>
           <p style={{ margin: 0 }}>CercasApp v1.0 • PWA Offline Ready</p>
-          <p style={{ margin: '0.2rem 0 0' }}>Horário Oficial: GMT-4 (Campo Grande / MS)</p>
+          <p style={{ margin: '0.2rem 0 0' }}>Fazenda Santo Antônio de Pádua • Horário GMT-4 (MS)</p>
         </div>
       </main>
 
