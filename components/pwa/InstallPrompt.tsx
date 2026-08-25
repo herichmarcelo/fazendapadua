@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, X, Share, PlusSquare, Smartphone, CheckCircle, ArrowDown } from 'lucide-react';
-import Image from 'next/image';
+import { Download, X, Share, PlusSquare, Smartphone, CheckCircle, Sparkles } from 'lucide-react';
 
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -10,9 +9,22 @@ export default function InstallPrompt() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
-    // 1. Verifica se o app já está rodando instalado (Standalone)
+    // 1. Registra o Service Worker explicitamente para atender aos critérios de PWA do Chrome/Android
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker registrado com sucesso:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[PWA] Falha ao registrar Service Worker:', err);
+        });
+    }
+
+    // 2. Verifica se o app já está rodando instalado (Standalone)
     const isAppStandalone = 
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true ||
@@ -20,75 +32,89 @@ export default function InstallPrompt() {
 
     setIsStandalone(isAppStandalone);
     if (isAppStandalone) {
-      return; // Já está instalado, não exibe banner
+      return; // Já está instalado, não exibe nada
     }
 
-    // 2. Verifica se o usuário já dispensou hoje
+    // 3. Verifica se o usuário dispensou recentemente
     const dismissedUntil = localStorage.getItem('cercas_pwa_dismissed_until');
     if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
       return;
     }
 
-    // 3. Detecta iOS Safari
+    // 4. Detecta iOS Safari
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent) || 
       (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /macintosh/.test(userAgent));
 
     if (isIosDevice) {
       setIsIOS(true);
-      // Exibe banner após 1.5s no iOS
       const timer = setTimeout(() => {
         setShowPrompt(true);
-      }, 1500);
+      }, 1200);
       return () => clearTimeout(timer);
     }
 
-    // 4. Captura evento nativo do Android / Chrome / Edge (beforeinstallprompt)
+    // 5. Captura o evento nativo do Android / Chrome / Edge
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowPrompt(true);
+      console.log('[PWA] Evento beforeinstallprompt capturado com sucesso!');
+    };
+
+    const handleAppInstalled = () => {
+      console.log('[PWA] Aplicativo instalado com sucesso!');
+      setShowPrompt(false);
+      setDeferredPrompt(null);
+      localStorage.setItem('cercas_pwa_installed', 'true');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Fallback: se em 2.5s no Android não disparar beforeinstallprompt (ex: Firefox ou Chrome que já avaliou), mostra banner informativo
-    const fallbackTimer = setTimeout(() => {
-      if (!isAppStandalone && !sessionStorage.getItem('pwa_shown')) {
-        setShowPrompt(true);
-        sessionStorage.setItem('pwa_shown', 'true');
-      }
-    }, 2500);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      clearTimeout(fallbackTimer);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
+  // Dispara a instalação nativa do Android
   const handleInstallClick = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult.outcome === 'accepted') {
-        setShowPrompt(false);
+      setIsInstalling(true);
+      try {
+        // Dispara o pop-up NATIVO do Android
+        await deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          console.log('[PWA] Usuário aceitou a instalação nativa');
+          setShowPrompt(false);
+        }
+      } catch (err) {
+        console.error('[PWA] Erro ao disparar prompt nativo:', err);
+      } finally {
+        setIsInstalling(false);
+        setDeferredPrompt(null);
       }
-      setDeferredPrompt(null);
     } else if (isIOS) {
       setShowIOSInstructions(true);
-    } else {
-      alert('Para instalar no seu navegador: abra o menu do navegador (3 pontos ⋮ no canto superior) e clique em "Adicionar à tela inicial" ou "Instalar aplicativo".');
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Guarda dispensa por 24 horas
-    const oneDayFromNow = Date.now() + 24 * 60 * 60 * 1000;
-    localStorage.setItem('cercas_pwa_dismissed_until', oneDayFromNow.toString());
+    // Guarda dispensa por 12 horas
+    const timeout = Date.now() + 12 * 60 * 60 * 1000;
+    localStorage.setItem('cercas_pwa_dismissed_until', timeout.toString());
   };
 
+  // Se já estiver instalado ou se não for iOS e não tiver deferredPrompt pronto, não mostra
   if (isStandalone || !showPrompt) {
+    return null;
+  }
+
+  // No Android, só exibe o banner se o evento nativo deferredPrompt estiver pronto
+  if (!isIOS && !deferredPrompt) {
     return null;
   }
 
@@ -158,7 +184,6 @@ export default function InstallPrompt() {
             height={48}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={(e) => {
-              // Fallback se a imagem demorar a carregar
               (e.target as HTMLElement).style.display = 'none';
             }}
           />
@@ -175,13 +200,16 @@ export default function InstallPrompt() {
               color: '#006B2B',
               background: '#E8F5E9',
               padding: '0.1rem 0.35rem',
-              borderRadius: '9999px'
+              borderRadius: '9999px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.2rem'
             }}>
-              Grátis
+              <Sparkles size={10} /> App Oficial
             </span>
           </div>
           <p style={{ fontSize: '0.75rem', color: '#4B5563', margin: '0.15rem 0 0', lineHeight: '1.3' }}>
-            Instale o app na sua tela de início para acesso rápido e modo offline
+            Instalar na tela inicial para abrir direto como aplicativo
           </p>
         </div>
       </div>
@@ -206,15 +234,15 @@ export default function InstallPrompt() {
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#E0F2FE', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.7rem' }}>1</div>
-            <div>Toque no botão <strong>Compartilhar</strong> <Share size={14} style={{ display: 'inline', verticalAlign: 'middle', color: '#0284C7' }} /> no rodapé do Safari.</div>
+            <div>Toque no botão <strong>Compartilhar</strong> <Share size={14} style={{ display: 'inline', verticalAlign: 'middle', color: '#0284C7' }} /> no Safari.</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#E0F2FE', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.7rem' }}>2</div>
-            <div>Role a lista e selecione <strong>&quot;Adicionar à Tela de Início&quot;</strong> <PlusSquare size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />.</div>
+            <div>Role e selecione <strong>&quot;Adicionar à Tela de Início&quot;</strong> <PlusSquare size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />.</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#E0F2FE', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.7rem' }}>3</div>
-            <div>Toque em <strong>&quot;Adicionar&quot;</strong> no canto superior direito. Pronto!</div>
+            <div>Toque em <strong>&quot;Adicionar&quot;</strong> no canto superior. Pronto!</div>
           </div>
 
           <button
@@ -236,7 +264,7 @@ export default function InstallPrompt() {
           </button>
         </div>
       ) : (
-        /* Botões de Ação Normais */
+        /* Botões de Ação */
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.875rem' }}>
           <button
             type="button"
@@ -259,6 +287,7 @@ export default function InstallPrompt() {
           <button
             type="button"
             onClick={handleInstallClick}
+            disabled={isInstalling}
             className="btn-primario"
             style={{
               flex: 1.8,
@@ -269,11 +298,12 @@ export default function InstallPrompt() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.35rem',
-              boxShadow: '0 4px 12px rgba(0, 151, 57, 0.3)'
+              boxShadow: '0 4px 12px rgba(0, 151, 57, 0.3)',
+              cursor: isInstalling ? 'wait' : 'pointer'
             }}
           >
             {isIOS ? <Share size={15} /> : <Download size={15} />}
-            <span>{isIOS ? 'Como Instalar no iOS' : 'Instalar Aplicativo'}</span>
+            <span>{isInstalling ? 'Instalando...' : isIOS ? 'Como Instalar no iOS' : 'Instalar no Celular'}</span>
           </button>
         </div>
       )}
