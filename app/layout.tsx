@@ -9,12 +9,14 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Controle de Cercas - Fazenda Cabrines',
+  title: 'Controle de Cercas - Fazenda Santo Antônio de Pádua',
   description: 'Sistema de gestão de cercas para agronegócio',
   manifest: '/manifest.json',
-  appleMobileWebAppCapable: 'yes',
-  appleMobileWebAppStatusBarStyle: 'black-translucent',
-  appleMobileWebAppTitle: 'CercasApp',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'CercasApp',
+  },
   icons: [
     { rel: 'icon', url: '/icon-192.png' },
     { rel: 'apple-touch-icon', url: '/icon-192.png' },

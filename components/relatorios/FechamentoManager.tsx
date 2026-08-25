@@ -463,11 +463,11 @@ export default function FechamentoManager({
       {/* 4. VISUALIZAÇÃO INDIVIDUAL: EXTRATO COMPLETO DE SERVIÇOS */}
       {/* ========================================================== */}
       {selectedEmpresaId !== 'all' ? (
-        <div className="card break-inside-avoid" style={{
+        <div className="card break-inside-avoid print:border-0 print:p-0" style={{
           padding: '1.5rem',
           background: 'white',
           border: '1px solid #D1D5DB'
-        }} className="print:border-0 print:p-0">
+        }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',

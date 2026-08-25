@@ -81,9 +81,9 @@ export async function getTotaisPorEmpresa() {
     }
   });
 
-  const totais = (servicos || []).reduce((acc, servico) => {
+  const totais = (servicos || []).reduce((acc, servico: any) => {
     const empId = servico.empresa_id;
-    const nome = servico.empresas?.nome || 'Sem nome';
+    const nome = (Array.isArray(servico.empresas) ? servico.empresas[0]?.nome : servico.empresas?.nome) || 'Sem nome';
     if (!acc[nome]) {
       const totalPagoEmpresa = empId ? (pagamentosPorEmpresaId[empId] || 0) : 0;
       acc[nome] = { 
